@@ -1,5 +1,6 @@
 package com.bayhill.dialapi;
 
+import android.net.Uri;
 import android.util.Log;
 
 import com.bayhill.dialapi.util.DialConstants;
@@ -50,7 +51,7 @@ public class DialFinder {
                         DatagramPacket incomingPacket = new DatagramPacket(buffer, buffer.length);
                         try {
                             socket.receive(incomingPacket);
-                            
+                            parseResponse(incomingPacket);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -88,5 +89,33 @@ public class DialFinder {
             }
         });
         broadcastThread.start();
+    }
+
+    private void parseResponse(DatagramPacket incomingPacket){
+        byte[] buffer = incomingPacket.getData();
+        boolean foundDialDevice = false;
+        String response = new String(buffer, 0, incomingPacket.getLength());
+        String location = null;
+        String[] responseArray = response.trim().split("\\r");
+        for(String str: responseArray){
+            if(str.startsWith(DialConstants.HEADER_LOCATION)){
+                location = str.substring(10).trim();
+            }else if(str.contains(DialConstants.ST_DIAL)){
+                foundDialDevice = true;
+            }
+        }
+        if(!foundDialDevice && location == null){
+            // No DIAL device was found
+            Log.d(TAG, "Device found was no DIAL device or sent malformed response");
+            return;
+        }
+        Uri locationUri = Uri.parse(location);
+        try {
+            InetAddress ip = InetAddress.getByName(locationUri.getHost());
+            int port = locationUri.getPort();
+            dialApi.getDeviceCallback().onDeviceFound(new DialDevice(ip, port));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
     }
 }

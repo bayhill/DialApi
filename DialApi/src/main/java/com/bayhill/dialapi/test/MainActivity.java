@@ -1,22 +1,29 @@
-package com.bayhill.dialapi;
+package com.bayhill.dialapi.test;
 
+import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
+import android.support.v4.app.ListFragment;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.bayhill.dialapi.DialApi;
+import com.bayhill.dialapi.DialDevice;
+import com.bayhill.dialapi.IDeviceCallback;
+import com.bayhill.dialapi.R;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -30,23 +37,30 @@ public class MainActivity extends ActionBarActivity {
      * {@link android.support.v4.app.FragmentStatePagerAdapter}.
      */
     SectionsPagerAdapter mSectionsPagerAdapter;
-
+    public String TAG = MainActivity.class.getSimpleName();
     /**
      * The {@link ViewPager} that will host the section contents.
      */
     ViewPager mViewPager;
-
+    Map<InetAddress, DialDevice> devices = new HashMap<InetAddress, DialDevice>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        /**
+         * DIAL SPECIFICS
+         */
+        DeviceCallback callback = new DeviceCallback();
+        DialApi dialApi = new DialApi.Builder()
+                .setApplicationName("YouTube")
+                .setSearchTimeout(10)
+                .setCallback(callback)
+                .build();
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
@@ -117,13 +131,28 @@ public class MainActivity extends ActionBarActivity {
     /**
      * A placeholder fragment containing a simple view.
      */
-    public static class PlaceholderFragment extends Fragment {
+    public static class PlaceholderFragment extends ListFragment {
+
+        public String TAG = PlaceholderFragment.class.getSimpleName();
+        private static final String ARG_SECTION_NUMBER = "section_number";
+        private DeviceListAdapter mDeviceListAdapter;
         /**
          * The fragment argument representing the section number for this
          * fragment.
          */
-        private static final String ARG_SECTION_NUMBER = "section_number";
+        @Override
+        public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+            Log.d(TAG, "onActivityCreated() was called");
+            getListView().setFastScrollEnabled(true);
+            setEmptyText("No devices");
+            setListShown(false);
 
+            mDeviceListAdapter = new DeviceListAdapter(getActivity(), R.id.list_item, null);
+            setListAdapter(mDeviceListAdapter);
+
+            setListShown(true);
+        }
         /**
          * Returns a new instance of this fragment for the given section
          * number.
@@ -146,6 +175,14 @@ public class MainActivity extends ActionBarActivity {
             TextView textView = (TextView) rootView.findViewById(R.id.section_label);
             textView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
             return rootView;
+        }
+    }
+
+    private class DeviceCallback implements IDeviceCallback {
+        public void onDeviceFound(DialDevice device){
+            if(!devices.containsKey(device.getIp())){
+                devices.put(device.getIp(), device);
+            }
         }
     }
 

@@ -13,6 +13,7 @@ public class DialConstants {
 
     /* Definitions of search targets */
     private static final String SL_MSEARCH = "M-SEARCH * HTTP/1.1";
+    public static final String HEADER_LOCATION = "LOCATION";
     public static final String ST_DIAL = "urn:dial-multiscreen-org:service:dial:1";
 
     /* Definition of MAN */

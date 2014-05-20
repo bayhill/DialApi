@@ -5,5 +5,5 @@ package com.bayhill.dialapi;
  */
 public interface IDeviceCallback {
 
-    public void onDeviceFound();
+    public void onDeviceFound(DialDevice device);
 }
